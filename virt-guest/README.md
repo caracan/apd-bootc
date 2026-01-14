@@ -10,7 +10,7 @@ podman tag quay.io/caracan/apd-virt-guest:latest quay.io/caracan/apd-virt-guest:
 
 ## Push
 
-podman push quay.io/caracan/apd-virt-guest:latest
+podman push quay.io/caracan/apd-virt-guest:latest;
 podman push quay.io/caracan/apd-virt-guest:$(cat version)
 
 ## Build qcow/iso
@@ -18,7 +18,9 @@ podman push quay.io/caracan/apd-virt-guest:$(cat version)
 This currently needs to be done with root
 
 sudo podman pull quay.io/caracan/apd-virt-guest:latest
-sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type anaconda-iso --type qcow2 --rootfs xfs quay.io/caracan/apd-virt-guest:latest
+sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type qcow2 --rootfs xfs quay.io/caracan/apd-virt-guest:latest
 
 sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type anaconda-iso --rootfs xfs quay.io/caracan/apd-virt-guest:latest
+
+## Deploy from qcow
 
