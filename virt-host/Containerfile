@@ -3,6 +3,7 @@ FROM quay.io/caracan/apd-base:latest
 RUN echo "qemu:x:107:107:qemu user:/:/sbin/nologin" >> /etc/passwd && \
       dnf -y install qemu-kvm libvirt virt-install virt-viewer cockpit-machines && \
       systemctl enable libvirt-guests && \
-      dnf clean all; 
+      dnf clean all; \
+      rm /var/{log,cache}/* -rf;
 	  
 RUN bootc container lint
