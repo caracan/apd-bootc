@@ -1,0 +1,6 @@
+FROM quay.io/caracan/apd-base:latest
+
+RUN dnf -y install @virtualization cockpit-machines; \
+	dnf clean all; \
+	systemctl enable libvirtd; \
+    rm /var/{log,cache,lib}/* -rf 

@@ -1,0 +1,10 @@
+
+FROM quay.io/fedora/fedora-bootc:43
+
+RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils; \
+	dnf clean all; \
+	systemctl enable cockpit.socket; \
+        firewall-offline-cmd --add-service cockpit; \
+        rm /var/{log,cache,lib}/* -rf
+
+COPY wheel-nopasswd /etc/sudoers.d

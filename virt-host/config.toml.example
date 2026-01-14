@@ -1,0 +1,4 @@
+[[customizations.user]]
+name = "apd"
+key = "<ssh public key>"
+groups = ["wheel"]

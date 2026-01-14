@@ -1,0 +1,7 @@
+FROM quay.io/caracan/apd-virt:latest
+
+RUN curl --fail --retry 15 --retry-all-errors -sSL https://pkgs.tailscale.com/stable/fedora/tailscale.repo -o /etc/yum.repos.d/tailscale.repo;\ 
+    dnf -y install git ansible buildah skopeo tmux nmap tailscale bash-completion; \
+    dnf clean all; \
+	systemctl enable libvirtd; \
+    rm /var/{log,cache,lib}/* -rf 

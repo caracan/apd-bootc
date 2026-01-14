@@ -1,0 +1,5 @@
+FROM quay.io/caracan/apd-base:latest
+
+RUN dnf -y install qemu-guest-agent; \
+	dnf clean all; \
+    rm /var/{log,cache,lib}/* -rf 
