@@ -4,6 +4,6 @@ RUN echo "qemu:x:107:107:qemu user:/:/sbin/nologin" >> /etc/passwd && \
       dnf -y install qemu-kvm libvirt virt-install virt-viewer cockpit-machines && \
       systemctl enable libvirt-guests && \
       dnf clean all; \
-      rm /var/{log,cache}/* -rf;
+      rm -rf /var/log/dnf5.log* /var/lib/dnf/ /var/cache/ibdnf5/;
 	  
 RUN bootc container lint
