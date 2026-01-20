@@ -25,7 +25,7 @@ jobs:
       - name: Get Version
         id: version_tags
         run: |
-          VERSION=$(jq -r '.version' ${context}/version)
+          VERSION=$(cat ${context}/version)
           TAGS=latest
           if [ "${VERSION}" ] && [ "${VERSION}" != "latest" ]; then
             TAGS+=" ${VERSION}"
