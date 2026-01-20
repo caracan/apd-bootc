@@ -1,0 +1,63 @@
+name: Build Base Bootc image
+on:
+  push:
+    branches:
+      - main
+    paths:
+       - base/**
+       - .github/workflows/base.yaml
+  
+  workflow_dispatch:
+         
+
+env:
+  repostitory: quay.io/caracan
+  context: base
+  image_name: apd-base
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v6
+
+      - name: Get Version
+        id: version_tags
+        run: |
+          VERSION=$(jq -r '.version' ${context}/version)
+          TAGS=latest
+          if [ "${VERSION}" ] && [ "${VERSION}" != "latest" ]; then
+            TAGS+=" ${VERSION}"
+          fi
+          if [[ "${GITHUB_REF}" =~ refs/tags/(.*) ]]; then
+            TAGS+=" git-${BASH_REMATCH[1]}"
+          fi
+          echo "IMAGE_TAGS=$TAGS" >> $GITHUB_OUTPUT
+      
+      - name: Set up qemu
+        uses:  docker/setup-qemu-action@v3
+
+      - name: Build Image
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          context: ${{ env.context }}
+          image: ${{ env.image_name }}
+          tags: ${{ steps.version_tags.outputs.IMAGE_TAGS }}
+          containerfiles: |
+            ./${{ env.context }}/Containerfile
+          platforms: linux/amd64
+      
+      - name: Build and publish image to Quay
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ env.repostitory }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+          
+    env:
+      BUILDAH_FORMAT: docker
+      BUILDAH_ISOLATION: chroot

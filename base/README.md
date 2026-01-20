@@ -4,6 +4,13 @@ This is the base image others will be derived from and installs packages that I 
 
 ## Build
 
+
+```bash
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-base:latest .
+```
+
+If building the minimal (for future reference) you need extra privileges
+
 ```bash
 podman build --pull=newer --cap-add=all --security-opt=label=type:container_runtime_t --device /dev/fuse -f Containerfile -t quay.io/caracan/apd-base:latest .
 ```
