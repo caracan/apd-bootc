@@ -5,7 +5,7 @@ This is an image, based on the virt-host image that adds in a set of tools that 
 ## Build
 
 ```bash
-podman build --pull=newer --cap-add=all --security-opt=label=type:container_runtime_t --device /dev/fuse -f Containerfile -t quay.io/caracan/apd-dev:latest .
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-dev:latest .
 ```
 
 ## Tag

@@ -5,7 +5,7 @@ An image that is built from the base but includes the @virtualisation group.
 ## Build
 
 ```bash
-podman build --pull=newer --cap-add=all --security-opt=label=type:container_runtime_t --device /dev/fuse -f Containerfile -t quay.io/caracan/apd-virt-host:latest .
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-host:latest .
 ```
 
 ## Tag

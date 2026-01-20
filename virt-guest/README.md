@@ -5,7 +5,7 @@ This builds on the apd-base image adding in qemu guest agent.
 ## Build
 
 ```bash
-podman build --pull=newer --cap-add=all --security-opt=label=type:container_runtime_t --device /dev/fuse -f Containerfile -t quay.io/caracan/apd-virt-guest:latest .
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-guest:latest .
 ```
 
 ## Tag

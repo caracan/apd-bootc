@@ -17,9 +17,12 @@ RUN <<EORUN
 # Set pipefail to display failures within the heredoc and avoid false-positive successful builds.
 set -xeuo pipefail
 # Install required packages for our custom bootc image.
-# Note that using a minimal manifest means we need to add critical components specific to our use case and environment.
-# For example, install networking and SSH - not every use case will want SSH, so it's not included in minimal
-dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils
+dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget
+
+# Enable cockpit
+systemctl enable cockpit.socket
+firewall-offline-cmd --add-service cockpit
+
 # Remove leftover build artifacts from installing packages from the final built image.
 dnf clean all
 rm /var/{log,cache,lib}/* -rf
