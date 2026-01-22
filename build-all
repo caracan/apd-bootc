@@ -1,0 +1,15 @@
+#!/bin/bash
+
+cd base;
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-base:latest .;
+podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:$(cat version);
+cd ../virt-host;
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-host:latest .;
+podman tag quay.io/caracan/apd-virt-host:latest quay.io/caracan/apd-virt-host:$(cat version);
+cd ../virt-guest;
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-guest:latest .;
+podman tag quay.io/caracan/apd-virt-guest:latest quay.io/caracan/apd-virt-guest:$(cat version);
+cd ../dev;
+podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-dev:latest -t quay.io/caracan/apd-dev:$(cat version) .;
+
+cd ..
