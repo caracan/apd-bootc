@@ -1,0 +1,58 @@
+name: PR Container Version Validator
+description: Workflow that runs when renovate submits a PR, the purpose being to bump the version.json so we build a new version on merge
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'base/**'
+      - 'virt-host/**'
+      - 'virt-guest/**'
+      - 'dev/**'
+
+jobs:
+  check-and-bump:
+    if: contains(github.event.pull_request.user.login, 'renovate') || contains(github.event.pull_request.labels.*.name, 'renovate-update')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Process Bumps
+        id: process
+        run: |
+          UPDATED_ANY=false
+          MODIFIED_SERVICES=""
+          touch modified_files.txt
+
+          for DIR in base/ virt-host/ virt-guest/ dev/; do
+            if [ -f "${DIR}version.json" ]; then
+              DIFF=$(git diff --name-only origin/main...HEAD -- "$DIR" | grep -v "version.json" || true)
+              V_CHECK=$(git diff --name-only origin/main...HEAD -- "${DIR}version.json" || true)
+
+              if [ -n "$DIFF" ] && [ -z "$V_CHECK" ]; then
+                jq '.["z-stream"] |= (tonumber + 1 | tostring) | .version = "\(.major).\(.minor).\(.["z-stream"])"' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
+                echo "${DIR}version.json" >> modified_files.txt
+                MODIFIED_SERVICES+="${DIR%/}, "
+                UPDATED_ANY=true
+              fi
+            fi
+          done
+          echo "updated=$UPDATED_ANY" >> $GITHUB_OUTPUT
+          echo "services=${MODIFIED_SERVICES%, }" >> $GITHUB_OUTPUT
+
+      - name: Commit and Push
+        if: steps.process.outputs.updated == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cat modified_files.txt | xargs git add
+          git commit -m "chore: auto-bump z-stream for ${{ steps.process.outputs.services }}"
+          git push

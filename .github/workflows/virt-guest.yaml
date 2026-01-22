@@ -1,18 +1,18 @@
-name: Build Base Bootc image
+name: Build Virt Guest
 on:
   push:
     branches:
       - main
     paths:
-       - base/**
-       - .github/workflows/base.yaml
+       - virt-guest/**
+       - .github/workflows/virt-guest.yaml
   
   workflow_dispatch:
-
+         
 env:
   repostitory: quay.io/caracan
-  context: base
-  image_name: apd-base
+  context: virt-guest
+  image_name: apd-virt-guest
 jobs:
   build:
     runs-on: ubuntu-latest
