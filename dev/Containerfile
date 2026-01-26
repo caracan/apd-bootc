@@ -1,7 +1,7 @@
 FROM quay.io/caracan/apd-virt-host:latest@sha256:6ea219fac4fff11a1fa9654b01a5071527fe4c00098c539a3c1995033c327c5a
 
 RUN curl --fail --retry 15 --retry-all-errors -sSL https://pkgs.tailscale.com/stable/fedora/tailscale.repo -o /etc/yum.repos.d/tailscale.repo;\ 
-    dnf -y install git ansible buildah skopeo tmux nmap tailscale; \
+    dnf -y install git ansible ansible-lint buildah skopeo tmux nmap tailscale; \
     dnf clean all; \
     rm -rf /var/log/dnf5.log* /var/lib/dnf/ /var/cache/libdnf5/;
 
