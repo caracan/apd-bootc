@@ -1,1 +1,6 @@
-{"version": "1.0.1", "major": "1", "minor": "0", "z-stream": "1"}
+{
+  "version": "1.0.2",
+  "major": "1",
+  "minor": "0",
+  "z-stream": "2"
+}
