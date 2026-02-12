@@ -1,4 +1,4 @@
-FROM quay.io/caracan/apd-base:latest@sha256:f47a390be41da84f367c187caf59b175165726b7b8a876103c110e262e44c6fb
+FROM quay.io/caracan/apd-base:latest@sha256:048247a666a90d54cacae6add263a62324ca7ebcc1e81c75d584e061bfd1a358
 
 RUN echo "qemu:x:107:107:qemu user:/:/sbin/nologin" >> /etc/passwd && \
       dnf -y install qemu-kvm libvirt virt-install virt-viewer cockpit-machines && \
