@@ -1,4 +1,4 @@
-FROM quay.io/caracan/apd-base:latest@sha256:048247a666a90d54cacae6add263a62324ca7ebcc1e81c75d584e061bfd1a358
+FROM quay.io/caracan/apd-base:latest@sha256:571225a9555d73b9ccb90055bb951abb56dee50707d3d710412c36833c285a33
 
 RUN dnf -y install qemu-guest-agent; \
 	dnf clean all; \
