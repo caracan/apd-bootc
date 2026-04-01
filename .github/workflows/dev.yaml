@@ -1,4 +1,4 @@
-name: Build Virt Host
+name: Build Development Image
 on:
   push:
     branches:
