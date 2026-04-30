@@ -24,7 +24,7 @@ jobs:
       - name: Get Versions for Tags 
         id: version_tags
         run: |
-          VERSION=$(jq -r '.version' ${context}/version.json)
+          VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' ${context}/version.json)
           MAJOR=$(jq -r '.major' ${context}/version.json)
           MINOR=$(jq -r '.minor' ${context}/version.json)
           TAGS=latest

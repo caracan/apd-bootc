@@ -1,7 +1,7 @@
 
 FROM quay.io/fedora/fedora-bootc:43@sha256:9ba52a036a8c896c6236c15f3416bd4707d79c0ad087c5e4f380446243748b6f
 
-RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget; \
+RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget bash-color-prompt; \
 	dnf clean all; \
 	systemctl enable cockpit.socket; \
         firewall-offline-cmd --add-service cockpit; \

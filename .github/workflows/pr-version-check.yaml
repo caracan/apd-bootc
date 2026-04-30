@@ -1,5 +1,5 @@
 name: PR Container Version Validator
-description: Workflow that runs when renovate submits a PR, the purpose being to bump the version.json so we build a new version on merge
+# Workflow that runs when renovate submits a PR, the purpose being to bump the version.json so we build a new version on merge
 on:
   pull_request:
     branches: [ main ]
@@ -38,7 +38,7 @@ jobs:
               V_CHECK=$(git diff --name-only origin/main...HEAD -- "${DIR}version.json" || true)
 
               if [ -n "$DIFF" ] && [ -z "$V_CHECK" ]; then
-                jq '.["z-stream"] |= (tonumber + 1 | tostring) | .version = "\(.major).\(.minor).\(.["z-stream"])"' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
+                 jq '.["zstream"] |= (tonumber + 1 | tostring)' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
                 echo "${DIR}version.json" >> modified_files.txt
                 MODIFIED_SERVICES+="${DIR%/}, "
                 UPDATED_ANY=true
