@@ -1,4 +1,4 @@
-FROM quay.io/caracan/apd-base:latest@sha256:238a44a8b52b9439f19c3ca1d77d09d441e11c7dbc5673b9fd334afd1509c3a2
+FROM quay.io/caracan/apd-base:latest@sha256:f88906aec03d555a1a604a8ce9945f8973a2e19346fa30edd1bfcd673d129870
 
 RUN dnf -y install qemu-guest-agent podman-compose; \
 	dnf clean all; \
