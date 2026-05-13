@@ -1,5 +1,5 @@
 
-FROM quay.io/fedora/fedora-bootc:43@sha256:0062f3715c1cfffde5f8415383b3d975592d14fbe88cffb6135d54346d314632
+FROM quay.io/fedora/fedora-bootc:43@sha256:15c47554443fe15ddbcf59bcba6fad8befb4e51015dbfa3f79810d04fe6fffac
 
 RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget bash-color-prompt; \
 	dnf clean all; \
