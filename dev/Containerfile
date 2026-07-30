@@ -1,4 +1,4 @@
-FROM quay.io/caracan/apd-virt-host:latest@sha256:2e51eb2b0bfc3aefb416cdf9da955f077fb4fc54417e0258d97c049f321fee5f
+FROM quay.io/caracan/apd-virt-host:latest@sha256:9926efca0a20a042972a3ab707ab6ff06358b91712b3b4a7ea7f8f1f316ac9e5
 
 RUN curl --fail --retry 15 --retry-all-errors -sSL https://pkgs.tailscale.com/stable/fedora/tailscale.repo -o /etc/yum.repos.d/tailscale.repo;\ 
     dnf -y install git ansible ansible-lint buildah skopeo tmux nmap tailscale podman-compose; \
