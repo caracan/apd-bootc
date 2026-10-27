@@ -82,22 +82,22 @@ jobs:
           set -e
           if [ "${{ steps.detect.outputs.build_base }}" = "true" ]; then
             echo "==> Testing build: apd-base"
-            buildah build --platforms linux/amd64 -t quay.io/caracan/apd-base:1 ./base
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-base:1 ./base
           fi
 
           if [ "${{ steps.detect.outputs.build_virt_host }}" = "true" ]; then
             echo "==> Testing build: apd-virt-host"
-            buildah build --platforms linux/amd64 -t quay.io/caracan/apd-virt-host:1 ./virt-host
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-virt-host:1 ./virt-host
           fi
 
           if [ "${{ steps.detect.outputs.build_virt_guest }}" = "true" ]; then
             echo "==> Testing build: apd-virt-guest"
-            buildah build --platforms linux/amd64 -t quay.io/caracan/apd-virt-guest:1 ./virt-guest
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-virt-guest:1 ./virt-guest
           fi
 
           if [ "${{ steps.detect.outputs.build_dev }}" = "true" ]; then
             echo "==> Testing build: apd-dev"
-            buildah build --platforms linux/amd64 -t quay.io/caracan/apd-dev:1 ./dev
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-dev:1 ./dev
           fi
           echo "==> All modified images passed test build!"
 
