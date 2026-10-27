@@ -1,0 +1,154 @@
+name: Build Bootc Images Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'base/**'
+      - 'virt-host/**'
+      - 'virt-guest/**'
+      - 'dev/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: 'Force build all images'
+        type: boolean
+        default: false
+      build_base:
+        description: 'Build base (and all dependents)'
+        type: boolean
+        default: false
+      build_virt_host:
+        description: 'Build virt-host (and dev)'
+        type: boolean
+        default: false
+      build_virt_guest:
+        description: 'Build virt-guest'
+        type: boolean
+        default: false
+      build_dev:
+        description: 'Build dev'
+        type: boolean
+        default: false
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      build_base: ${{ steps.detect.outputs.build_base }}
+      build_virt_host: ${{ steps.detect.outputs.build_virt_host }}
+      build_virt_guest: ${{ steps.detect.outputs.build_virt_guest }}
+      build_dev: ${{ steps.detect.outputs.build_dev }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changed Services
+        id: detect
+        run: |
+          BUILD_BASE=false
+          BUILD_VIRT_HOST=false
+          BUILD_VIRT_GUEST=false
+          BUILD_DEV=false
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.force_all }}" = "true" ]; then
+              BUILD_BASE=true
+              BUILD_VIRT_HOST=true
+              BUILD_VIRT_GUEST=true
+              BUILD_DEV=true
+            else
+              [ "${{ inputs.build_base }}" = "true" ] && BUILD_BASE=true
+              [ "${{ inputs.build_virt_host }}" = "true" ] && BUILD_VIRT_HOST=true
+              [ "${{ inputs.build_virt_guest }}" = "true" ] && BUILD_VIRT_GUEST=true
+              [ "${{ inputs.build_dev }}" = "true" ] && BUILD_DEV=true
+            fi
+          else
+            BEFORE_SHA="${{ github.event.before }}"
+            if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git rev-parse --verify "$BEFORE_SHA" >/dev/null 2>&1; then
+              BASE_SHA="$BEFORE_SHA"
+            else
+              BASE_SHA="HEAD~1"
+            fi
+
+            DIFF=$(git diff --name-only "$BASE_SHA" HEAD || true)
+            echo "Changed files between $BASE_SHA and HEAD:"
+            echo "$DIFF"
+
+            if echo "$DIFF" | grep -q -E "^base/|^\.github/workflows/"; then
+              BUILD_BASE=true
+            fi
+            if echo "$DIFF" | grep -q "^virt-host/"; then
+              BUILD_VIRT_HOST=true
+            fi
+            if echo "$DIFF" | grep -q "^virt-guest/"; then
+              BUILD_VIRT_GUEST=true
+            fi
+            if echo "$DIFF" | grep -q "^dev/"; then
+              BUILD_DEV=true
+            fi
+          fi
+
+          # Dependency cascading:
+          # base -> virt-host, virt-guest
+          if [ "$BUILD_BASE" = "true" ]; then
+            BUILD_VIRT_HOST=true
+            BUILD_VIRT_GUEST=true
+          fi
+
+          # virt-host -> dev
+          if [ "$BUILD_VIRT_HOST" = "true" ]; then
+            BUILD_DEV=true
+          fi
+
+          echo "build_base=$BUILD_BASE" >> $GITHUB_OUTPUT
+          echo "build_virt_host=$BUILD_VIRT_HOST" >> $GITHUB_OUTPUT
+          echo "build_virt_guest=$BUILD_VIRT_GUEST" >> $GITHUB_OUTPUT
+          echo "build_dev=$BUILD_DEV" >> $GITHUB_OUTPUT
+
+          echo "Build plan:"
+          echo "  base: $BUILD_BASE"
+          echo "  virt-host: $BUILD_VIRT_HOST"
+          echo "  virt-guest: $BUILD_VIRT_GUEST"
+          echo "  dev: $BUILD_DEV"
+
+  build-base:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.build_base == 'true'
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      context: base
+      image_name: apd-base
+    secrets: inherit
+
+  build-virt-host:
+    needs: [detect-changes, build-base]
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure') && needs.detect-changes.outputs.build_virt_host == 'true'
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      context: virt-host
+      image_name: apd-virt-host
+    secrets: inherit
+
+  build-virt-guest:
+    needs: [detect-changes, build-base]
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure') && needs.detect-changes.outputs.build_virt_guest == 'true'
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      context: virt-guest
+      image_name: apd-virt-guest
+    secrets: inherit
+
+  build-dev:
+    needs: [detect-changes, build-virt-host]
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure') && needs.detect-changes.outputs.build_dev == 'true'
+    uses: ./.github/workflows/reusable-build.yaml
+    with:
+      context: dev
+      image_name: apd-dev
+    secrets: inherit
+

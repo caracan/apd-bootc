@@ -1,0 +1,65 @@
+name: Reusable Bootc Image Builder
+
+on:
+  workflow_call:
+    inputs:
+      context:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      registry:
+        required: false
+        type: string
+        default: 'quay.io/caracan'
+    secrets:
+      REGISTRY_USERNAME:
+        required: true
+      REGISTRY_TOKEN:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BUILDAH_FORMAT: docker
+      BUILDAH_ISOLATION: chroot
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Get Versions for Tags
+        id: version_tags
+        run: |
+          VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' ${{ inputs.context }}/version.json)
+          MAJOR=$(jq -r '.major' ${{ inputs.context }}/version.json)
+          MINOR=$(jq -r '.minor' ${{ inputs.context }}/version.json)
+          TAGS=latest
+          TAGS+=" ${VERSION} ${MAJOR} ${MAJOR}.${MINOR}"
+          echo "IMAGE_TAGS=$TAGS" >> $GITHUB_OUTPUT
+          echo "CONTAINER_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Build Image
+        id: build-image
+        uses: redhat-actions/buildah-build@v3
+        with:
+          context: ${{ inputs.context }}
+          image: ${{ inputs.image_name }}
+          tags: ${{ steps.version_tags.outputs.IMAGE_TAGS }}
+          containerfiles: |
+            ./${{ inputs.context }}/Containerfile
+          platforms: linux/amd64
+
+      - name: Build and publish image to Quay
+        uses: redhat-actions/push-to-registry@v3
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ inputs.registry }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+

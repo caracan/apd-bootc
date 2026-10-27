@@ -1,5 +1,5 @@
 name: PR Container Version Validator
-# Workflow that runs when renovate submits a PR, the purpose being to bump the version.json so we build a new version on merge
+# Workflow that runs on PRs (especially Renovate) to dry-run test builds and bump version.json for modified images and their dependents
 on:
   pull_request:
     branches: [ main ]
@@ -11,7 +11,6 @@ on:
 
 jobs:
   check-and-bump:
-    if: contains(github.event.pull_request.user.login, 'renovate') || contains(github.event.pull_request.labels.*.name, 'renovate-update')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,30 +24,113 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Process Bumps
+      - name: Detect Changed Services
+        id: detect
+        run: |
+          DIFF_BASE=$(git diff --name-only origin/main...HEAD -- "base/" | grep -v "version.json" || true)
+          DIFF_VIRT_HOST=$(git diff --name-only origin/main...HEAD -- "virt-host/" | grep -v "version.json" || true)
+          DIFF_VIRT_GUEST=$(git diff --name-only origin/main...HEAD -- "virt-guest/" | grep -v "version.json" || true)
+          DIFF_DEV=$(git diff --name-only origin/main...HEAD -- "dev/" | grep -v "version.json" || true)
+
+          BUILD_BASE=false
+          BUILD_VIRT_HOST=false
+          BUILD_VIRT_GUEST=false
+          BUILD_DEV=false
+
+          # Cascading dependency logic:
+          # base -> virt-host, virt-guest
+          # virt-host -> dev
+          if [ -n "$DIFF_BASE" ]; then
+            BUILD_BASE=true
+            BUILD_VIRT_HOST=true
+            BUILD_VIRT_GUEST=true
+            BUILD_DEV=true
+          fi
+
+          if [ -n "$DIFF_VIRT_HOST" ]; then
+            BUILD_VIRT_HOST=true
+            BUILD_DEV=true
+          fi
+
+          if [ -n "$DIFF_VIRT_GUEST" ]; then
+            BUILD_VIRT_GUEST=true
+          fi
+
+          if [ -n "$DIFF_DEV" ]; then
+            BUILD_DEV=true
+          fi
+
+          echo "build_base=$BUILD_BASE" >> $GITHUB_OUTPUT
+          echo "build_virt_host=$BUILD_VIRT_HOST" >> $GITHUB_OUTPUT
+          echo "build_virt_guest=$BUILD_VIRT_GUEST" >> $GITHUB_OUTPUT
+          echo "build_dev=$BUILD_DEV" >> $GITHUB_OUTPUT
+
+          echo "Images to test/bump:"
+          echo "  base: $BUILD_BASE"
+          echo "  virt-host: $BUILD_VIRT_HOST"
+          echo "  virt-guest: $BUILD_VIRT_GUEST"
+          echo "  dev: $BUILD_DEV"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Dry-Run Test Build
+        env:
+          BUILDAH_FORMAT: docker
+          BUILDAH_ISOLATION: chroot
+        run: |
+          set -e
+          if [ "${{ steps.detect.outputs.build_base }}" = "true" ]; then
+            echo "==> Testing build: apd-base"
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-base:1 ./base
+          fi
+
+          if [ "${{ steps.detect.outputs.build_virt_host }}" = "true" ]; then
+            echo "==> Testing build: apd-virt-host"
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-virt-host:1 ./virt-host
+          fi
+
+          if [ "${{ steps.detect.outputs.build_virt_guest }}" = "true" ]; then
+            echo "==> Testing build: apd-virt-guest"
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-virt-guest:1 ./virt-guest
+          fi
+
+          if [ "${{ steps.detect.outputs.build_dev }}" = "true" ]; then
+            echo "==> Testing build: apd-dev"
+            buildah build --platform linux/amd64 -t quay.io/caracan/apd-dev:1 ./dev
+          fi
+          echo "==> All modified images passed test build!"
+
+      - name: Process Bumps for Renovate
         id: process
+        if: contains(github.event.pull_request.user.login, 'renovate') || contains(github.event.pull_request.labels.*.name, 'renovate-update')
         run: |
           UPDATED_ANY=false
           MODIFIED_SERVICES=""
           touch modified_files.txt
 
-          for DIR in base/ virt-host/ virt-guest/ dev/; do
+          bump_service() {
+            local DIR=$1
             if [ -f "${DIR}version.json" ]; then
-              DIFF=$(git diff --name-only origin/main...HEAD -- "$DIR" | grep -v "version.json" || true)
-              V_CHECK=$(git diff --name-only origin/main...HEAD -- "${DIR}version.json" || true)
-
-              if [ -n "$DIFF" ] && [ -z "$V_CHECK" ]; then
-                 jq '.["zstream"] |= (tonumber + 1 | tostring)' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
+              local V_CHECK=$(git diff --name-only origin/main...HEAD -- "${DIR}version.json" || true)
+              if [ -z "$V_CHECK" ]; then
+                jq '.["zstream"] |= (tonumber + 1 | tostring)' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
                 echo "${DIR}version.json" >> modified_files.txt
                 MODIFIED_SERVICES+="${DIR%/}, "
                 UPDATED_ANY=true
               fi
             fi
-          done
+          }
+
+          [ "${{ steps.detect.outputs.build_base }}" = "true" ] && bump_service "base/"
+          [ "${{ steps.detect.outputs.build_virt_host }}" = "true" ] && bump_service "virt-host/"
+          [ "${{ steps.detect.outputs.build_virt_guest }}" = "true" ] && bump_service "virt-guest/"
+          [ "${{ steps.detect.outputs.build_dev }}" = "true" ] && bump_service "dev/"
+
           echo "updated=$UPDATED_ANY" >> $GITHUB_OUTPUT
           echo "services=${MODIFIED_SERVICES%, }" >> $GITHUB_OUTPUT
 
-      - name: Commit and Push
+      - name: Commit and Push Version Bump
         if: steps.process.outputs.updated == 'true'
         run: |
           git config user.name "github-actions[bot]"
