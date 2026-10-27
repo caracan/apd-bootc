@@ -17,6 +17,7 @@ Built on top of `apd-base:1`, this image configures a dedicated virtualization h
 ## Local Build & Push
 
 ### Build
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -29,6 +30,7 @@ podman build --pull=newer \
 ```
 
 ### Push
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -71,6 +73,7 @@ sudo podman run --rm -it --privileged --pull=newer \
 ## Deployment
 
 On an existing bootc host:
+
 ```bash
 sudo bootc switch quay.io/caracan/apd-virt-host:1
 ```

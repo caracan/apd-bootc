@@ -14,6 +14,7 @@ Built on top of `apd-base:1`, this image is tailored for running as a lightweigh
 ## Local Build & Push
 
 ### Build
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -26,6 +27,7 @@ podman build --pull=newer \
 ```
 
 ### Push
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -84,6 +86,7 @@ sudo virt-install \
 ## Deployment
 
 On an existing bootc host:
+
 ```bash
 sudo bootc switch quay.io/caracan/apd-virt-guest:1
 ```

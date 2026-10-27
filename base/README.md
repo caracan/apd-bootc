@@ -18,6 +18,7 @@ The foundational bootc container image from which all other images in this repos
 ## Local Build & Push
 
 ### Build
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -30,6 +31,7 @@ podman build --pull=newer \
 ```
 
 ### Push
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -76,6 +78,7 @@ sudo podman run --rm -it --privileged --pull=newer \
 ## Deployment
 
 On an existing bootc host:
+
 ```bash
 sudo bootc switch quay.io/caracan/apd-base:1
 ```

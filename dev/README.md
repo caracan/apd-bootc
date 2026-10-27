@@ -20,6 +20,7 @@ Built on top of `apd-virt-host:1`, this image equips a machine with essential co
 ## Local Build & Push
 
 ### Build
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -32,6 +33,7 @@ podman build --pull=newer \
 ```
 
 ### Push
+
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
@@ -74,6 +76,7 @@ sudo podman run --rm -it --privileged --pull=newer \
 ## Deployment
 
 On an existing bootc host:
+
 ```bash
 sudo bootc switch quay.io/caracan/apd-dev:1
 ```
