@@ -7,4 +7,4 @@ RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit c
         firewall-offline-cmd --add-service cockpit; \
         rm /var/{log,cache,lib}/* -rf
 
-COPY wheel-nopasswd /etc/sudoers.d
+COPY --chmod=0440 wheel-nopasswd /etc/sudoers.d/wheel-nopasswd

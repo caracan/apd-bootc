@@ -11,21 +11,25 @@ podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-guest:lat
 ## Tag
 
 ```bash
-podman tag quay.io/caracan/apd-virt-guest:latest quay.io/caracan/apd-virt-guest:$(cat version)
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+podman tag quay.io/caracan/apd-virt-guest:latest quay.io/caracan/apd-virt-guest:${VERSION}
+podman tag quay.io/caracan/apd-virt-guest:latest quay.io/caracan/apd-virt-guest:1
 ```
 
 ## Push
 
 ```bash
-podman push quay.io/caracan/apd-virt-guest:latest;
-podman push quay.io/caracan/apd-virt-guest:$(cat version)
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+podman push quay.io/caracan/apd-virt-guest:latest
+podman push quay.io/caracan/apd-virt-guest:${VERSION}
+podman push quay.io/caracan/apd-virt-guest:1
 ```
 
 ## Build qcow/iso
 
-This currently needs to be done as root. Create a config.toml file from the example or using the [docs](https://bootc-dev.github.io/bootc/bootc-install.html)
+This currently needs to be done as root. Create a `config.toml` file from the example or using the [docs](https://bootc-dev.github.io/bootc/bootc-install.html).
 
-Pull the image as root
+Pull the image as root:
 
 ```bash
 sudo podman pull quay.io/caracan/apd-virt-guest:latest
@@ -42,5 +46,5 @@ sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unc
 ## Deploy from qcow
 
 ```bash
-sudo virt-install -d    --name fedora-bootc     --cpu host     --vcpus 4     --memory 4096     --import --disk /var/lib/libvirt/images/disk.qcow2,format=qcow2     --os-variant fedora-unknown
+sudo virt-install -d --name fedora-bootc --cpu host --vcpus 4 --memory 4096 --import --disk /var/lib/libvirt/images/disk.qcow2,format=qcow2 --os-variant fedora-unknown
 ```

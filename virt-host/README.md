@@ -11,29 +11,33 @@ podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-host:late
 ## Tag
 
 ```bash
-podman tag quay.io/caracan/apd-virt-host:latest quay.io/caracan/apd-virt-host:$(cat version)
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+podman tag quay.io/caracan/apd-virt-host:latest quay.io/caracan/apd-virt-host:${VERSION}
+podman tag quay.io/caracan/apd-virt-host:latest quay.io/caracan/apd-virt-host:1
 ```
 
 ## Push
 
 ```bash
-podman push quay.io/caracan/apd-virt-host:latest;
-podman push quay.io/caracan/apd-virt-host:$(cat version)
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+podman push quay.io/caracan/apd-virt-host:latest
+podman push quay.io/caracan/apd-virt-host:${VERSION}
+podman push quay.io/caracan/apd-virt-host:1
 ```
 
 ## Build qcow/iso
 
-This currently needs to be done with root
+This currently needs to be done with root.
 
-Create a config.toml file from the example or using the [docs](https://bootc-dev.github.io/bootc/bootc-install.html)
+Create a `config.toml` file from the example or using the [docs](https://bootc-dev.github.io/bootc/bootc-install.html).
 
-Pull the image as root
+Pull the image as root:
 
 ```bash
 sudo podman pull quay.io/caracan/apd-virt-host:latest
 ```
 
-Run one of the following commands depending on the output required.
+Run one of the following commands depending on the output required:
 
 ```bash
 sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type anaconda-iso --rootfs xfs quay.io/caracan/apd-virt-host:latest

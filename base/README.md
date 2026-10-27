@@ -1,15 +1,14 @@
 # Base bootc image
 
-This is the base image others will be derived from and installs packages that I would install on all machines. Currenlty uses the standard Fedora bootc, but there is a minimal container file which it may switch to in the future for a smaller more targeted base.
+This is the base image others will be derived from and installs packages that I would install on all machines. Currently uses the standard Fedora bootc, but there is a minimal container file which it may switch to in the future for a smaller more targeted base.
 
 ## Build
-
 
 ```bash
 podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-base:latest .
 ```
 
-If building the minimal (for future reference) you need extra privileges
+If building the minimal (for future reference) you need extra privileges:
 
 ```bash
 podman build --pull=newer --cap-add=all --security-opt=label=type:container_runtime_t --device /dev/fuse -f Containerfile -t quay.io/caracan/apd-base:latest .
@@ -18,14 +17,18 @@ podman build --pull=newer --cap-add=all --security-opt=label=type:container_runt
 ## Tag
 
 ```bash
-podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:$(cat version)
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:${VERSION}
+podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:1
 ```
 
 ## Push
 
 ```bash
-podman push quay.io/caracan/apd-base:latest;
-podman push quay.io/caracan/apd-base:$(cat version)
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+podman push quay.io/caracan/apd-base:latest
+podman push quay.io/caracan/apd-base:${VERSION}
+podman push quay.io/caracan/apd-base:1
 ```
 
 ## Build qcow/iso
