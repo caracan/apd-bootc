@@ -9,10 +9,10 @@
   "packageRules": [
     {
       "description": "Ignore internal images built within this repository",
-      "matchPackagePatterns": [
-        "^quay\\.io/caracan/"
-      ],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "/^quay\\.io/caracan//"
+      ]
     },
     {
       "description": "Disable major updates for docker images",
