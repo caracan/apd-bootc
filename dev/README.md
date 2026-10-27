@@ -1,46 +1,79 @@
-# Development Tools image
+# Development Tools bootc Image (`apd-dev`)
 
-This is an image, based on the virt-host image that adds in a set of tools that I use as part of development. Other tools, such as specific language compilers/runtimes, are more likely best worked with the toolbox paradigm.
+Built on top of `apd-virt-host:1`, this image equips a machine with essential command-line developer tooling, infrastructure automation tools, container build utilities, and mesh networking via Tailscale.
 
-## Build
+## Contents
 
-```bash
-podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-dev:latest .
-```
+* **Base Image**: `quay.io/caracan/apd-virt-host:1`
+* **Additional Repositories**: Tailscale stable Fedora repository (`tailscale.repo`)
+* **Installed Packages**:
+  * Version Control: `git`
+  * Infrastructure Automation: `ansible`, `ansible-lint`
+  * Container & Registry Utilities: `buildah`, `skopeo`, `podman-compose`
+  * Networking & Mesh VPN: `tailscale`, `nmap`
+  * Terminal Utilities: `tmux`
+* **Configuration**:
+  * Validated with `bootc container lint`
 
-## Tag
+> **Tip:** Language runtimes and project-specific dependencies are recommended to be run inside [Toolbx](https://containertoolbx.org/) / Podman containers rather than baked directly into the immutable OS image.
 
+## Local Build & Push
+
+### Build
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
-podman tag quay.io/caracan/apd-dev:latest quay.io/caracan/apd-dev:${VERSION}
-podman tag quay.io/caracan/apd-dev:latest quay.io/caracan/apd-dev:1
+MAJOR=$(jq -r '.major' version.json)
+
+podman build --pull=newer \
+  -t quay.io/caracan/apd-dev:latest \
+  -t quay.io/caracan/apd-dev:${MAJOR} \
+  -t quay.io/caracan/apd-dev:${VERSION} \
+  .
 ```
 
-## Push
-
+### Push
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+MAJOR=$(jq -r '.major' version.json)
+
 podman push quay.io/caracan/apd-dev:latest
+podman push quay.io/caracan/apd-dev:${MAJOR}
 podman push quay.io/caracan/apd-dev:${VERSION}
-podman push quay.io/caracan/apd-dev:1
 ```
 
-## Build qcow/iso
+## Generating Installable Disk Images
 
-This currently needs to be done with root. Create a `config.toml` file from the example or using the [docs](https://bootc-dev.github.io/bootc/bootc-install.html).
-
-Pull the image as root:
+Using [`bootc-image-builder`](https://github.com/osbuild/bootc-image-builder):
 
 ```bash
-sudo podman pull quay.io/caracan/apd-dev:latest
+# Create QCOW2 virtual machine disk
+sudo podman run --rm -it --privileged --pull=newer \
+  --security-opt label=type:unconfined_t \
+  -v ./config.toml:/config.toml:ro \
+  -v $(pwd)/output:/output \
+  -v /var/lib/containers/storage:/var/lib/containers/storage \
+  quay.io/centos-bootc/bootc-image-builder:latest \
+  --chown 1000:1000 \
+  --type qcow2 \
+  --rootfs xfs \
+  quay.io/caracan/apd-dev:1
+
+# Create Anaconda Installation ISO (bare-metal)
+sudo podman run --rm -it --privileged --pull=newer \
+  --security-opt label=type:unconfined_t \
+  -v ./config.toml:/config.toml:ro \
+  -v $(pwd)/output:/output \
+  -v /var/lib/containers/storage:/var/lib/containers/storage \
+  quay.io/centos-bootc/bootc-image-builder:latest \
+  --chown 1000:1000 \
+  --type anaconda-iso \
+  --rootfs xfs \
+  quay.io/caracan/apd-dev:1
 ```
 
-Run one of the following commands depending on the output required:
+## Deployment
 
+On an existing bootc host:
 ```bash
-sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type anaconda-iso --type qcow2 --rootfs xfs quay.io/caracan/apd-dev:latest
-```
-
-```bash
-sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type qcow2 --rootfs xfs quay.io/caracan/apd-dev:latest
+sudo bootc switch quay.io/caracan/apd-dev:1
 ```

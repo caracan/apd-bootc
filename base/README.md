@@ -1,50 +1,81 @@
-# Base bootc image
+# Base bootc Image (`apd-base`)
 
-This is the base image others will be derived from and installs packages that I would install on all machines. Currently uses the standard Fedora bootc, but there is a minimal container file which it may switch to in the future for a smaller more targeted base.
+The foundational bootc container image from which all other images in this repository derive. It installs the essential system packages, services, and administrative defaults used across all machines.
 
-## Build
+## Contents
 
-```bash
-podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-base:latest .
-```
+* **Base OS**: `quay.io/fedora/fedora-bootc:43` (pinned upstream digest tracked by Renovate)
+* **Installed Packages**:
+  * Networking & Remote Access: `NetworkManager`, `openssh-server`, `wget`, `nfs-utils`
+  * Container Tools: `podman`, `systemd-container`
+  * Web Administration: `cockpit`, `cockpit-podman`
+  * System & Shell Utilities: `sudo`, `firewalld`, `acl`, `bash-color-prompt`
+* **Configuration & Services**:
+  * `cockpit.socket` enabled at boot
+  * Firewalld pre-configured to allow Cockpit (`firewall-offline-cmd --add-service cockpit`)
+  * Passwordless sudo enabled for `%wheel` via `/etc/sudoers.d/wheel-nopasswd` (mode `0440`)
 
-If building the minimal (for future reference) you need extra privileges:
+## Local Build & Push
 
-```bash
-podman build --pull=newer --cap-add=all --security-opt=label=type:container_runtime_t --device /dev/fuse -f Containerfile -t quay.io/caracan/apd-base:latest .
-```
-
-## Tag
-
-```bash
-VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
-podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:${VERSION}
-podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:1
-```
-
-## Push
-
+### Build
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+MAJOR=$(jq -r '.major' version.json)
+
+podman build --pull=newer \
+  -t quay.io/caracan/apd-base:latest \
+  -t quay.io/caracan/apd-base:${MAJOR} \
+  -t quay.io/caracan/apd-base:${VERSION} \
+  .
+```
+
+### Push
+```bash
+VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+MAJOR=$(jq -r '.major' version.json)
+
 podman push quay.io/caracan/apd-base:latest
+podman push quay.io/caracan/apd-base:${MAJOR}
 podman push quay.io/caracan/apd-base:${VERSION}
-podman push quay.io/caracan/apd-base:1
 ```
 
-## Build qcow/iso
+## Generating Installable Disk Images
+
+Using [`bootc-image-builder`](https://github.com/osbuild/bootc-image-builder):
 
 ```bash
-sudo podman pull quay.io/caracan/apd-base:latest
+# Prepare config.toml
+cp config.toml.example config.toml
+# Edit config.toml to add your SSH key
+
+# Create QCOW2 virtual machine disk
+sudo podman run --rm -it --privileged --pull=newer \
+  --security-opt label=type:unconfined_t \
+  -v ./config.toml:/config.toml:ro \
+  -v $(pwd)/output:/output \
+  -v /var/lib/containers/storage:/var/lib/containers/storage \
+  quay.io/centos-bootc/bootc-image-builder:latest \
+  --chown 1000:1000 \
+  --type qcow2 \
+  --rootfs xfs \
+  quay.io/caracan/apd-base:1
+
+# Create Anaconda Installation ISO (bare-metal)
+sudo podman run --rm -it --privileged --pull=newer \
+  --security-opt label=type:unconfined_t \
+  -v ./config.toml:/config.toml:ro \
+  -v $(pwd)/output:/output \
+  -v /var/lib/containers/storage:/var/lib/containers/storage \
+  quay.io/centos-bootc/bootc-image-builder:latest \
+  --chown 1000:1000 \
+  --type anaconda-iso \
+  --rootfs xfs \
+  quay.io/caracan/apd-base:1
 ```
 
-qcow
+## Deployment
 
+On an existing bootc host:
 ```bash
-sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type qcow2 --rootfs xfs quay.io/caracan/apd-base:latest
-```
-
-ISO
-
-```bash
-sudo podman run --rm -it --privileged --pull=newer --security-opt label=type:unconfined_t -v ./config.toml:/config.toml:ro -v $(pwd)/output:/output -v /var/lib/containers/storage:/var/lib/containers/storage quay.io/centos-bootc/bootc-image-builder:latest --chown 1000:1000 --type anaconda-iso --rootfs xfs quay.io/caracan/apd-base:latest
+sudo bootc switch quay.io/caracan/apd-base:1
 ```
