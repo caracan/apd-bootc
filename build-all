@@ -1,15 +1,34 @@
 #!/bin/bash
+set -euo pipefail
 
-cd base;
-podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-base:latest .;
-podman tag quay.io/caracan/apd-base:latest quay.io/caracan/apd-base:$(cat version);
-cd ../virt-host;
-podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-host:latest .;
-podman tag quay.io/caracan/apd-virt-host:latest quay.io/caracan/apd-virt-host:$(cat version);
-cd ../virt-guest;
-podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-virt-guest:latest .;
-podman tag quay.io/caracan/apd-virt-guest:latest quay.io/caracan/apd-virt-guest:$(cat version);
-cd ../dev;
-podman build --pull=newer -f Containerfile -t quay.io/caracan/apd-dev:latest -t quay.io/caracan/apd-dev:$(cat version) .;
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-cd ..
+build_service() {
+  local dir="$1"
+  local image_name="$2"
+
+  echo "==> Building $image_name in $dir..."
+  cd "$SCRIPT_DIR/$dir"
+
+  local version major minor
+  version=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+  major=$(jq -r '.major' version.json)
+  minor=$(jq -r '.minor' version.json)
+
+  podman build --pull=newer \
+    -f Containerfile \
+    -t "quay.io/caracan/${image_name}:latest" \
+    -t "quay.io/caracan/${image_name}:${major}" \
+    -t "quay.io/caracan/${image_name}:${major}.${minor}" \
+    -t "quay.io/caracan/${image_name}:${version}" \
+    .
+
+  echo "Successfully built quay.io/caracan/${image_name}:${version} (and :${major}, :latest)"
+}
+
+build_service "base" "apd-base"
+build_service "virt-host" "apd-virt-host"
+build_service "virt-guest" "apd-virt-guest"
+build_service "dev" "apd-dev"
+
+echo "==> All images built successfully!"

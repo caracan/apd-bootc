@@ -1,5 +1,5 @@
 name: PR Container Version Validator
-# Workflow that runs when renovate submits a PR, the purpose being to bump the version.json so we build a new version on merge
+# Workflow that runs on PRs (especially Renovate) to bump version.json for modified images and their dependents
 on:
   pull_request:
     branches: [ main ]
@@ -32,19 +32,57 @@ jobs:
           MODIFIED_SERVICES=""
           touch modified_files.txt
 
-          for DIR in base/ virt-host/ virt-guest/ dev/; do
-            if [ -f "${DIR}version.json" ]; then
-              DIFF=$(git diff --name-only origin/main...HEAD -- "$DIR" | grep -v "version.json" || true)
-              V_CHECK=$(git diff --name-only origin/main...HEAD -- "${DIR}version.json" || true)
+          DIFF_BASE=$(git diff --name-only origin/main...HEAD -- "base/" | grep -v "version.json" || true)
+          DIFF_VIRT_HOST=$(git diff --name-only origin/main...HEAD -- "virt-host/" | grep -v "version.json" || true)
+          DIFF_VIRT_GUEST=$(git diff --name-only origin/main...HEAD -- "virt-guest/" | grep -v "version.json" || true)
+          DIFF_DEV=$(git diff --name-only origin/main...HEAD -- "dev/" | grep -v "version.json" || true)
 
-              if [ -n "$DIFF" ] && [ -z "$V_CHECK" ]; then
-                 jq '.["zstream"] |= (tonumber + 1 | tostring)' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
+          BUMP_BASE=false
+          BUMP_VIRT_HOST=false
+          BUMP_VIRT_GUEST=false
+          BUMP_DEV=false
+
+          # Cascading dependency logic:
+          # base -> virt-host, virt-guest
+          # virt-host -> dev
+          if [ -n "$DIFF_BASE" ]; then
+            BUMP_BASE=true
+            BUMP_VIRT_HOST=true
+            BUMP_VIRT_GUEST=true
+            BUMP_DEV=true
+          fi
+
+          if [ -n "$DIFF_VIRT_HOST" ]; then
+            BUMP_VIRT_HOST=true
+            BUMP_DEV=true
+          fi
+
+          if [ -n "$DIFF_VIRT_GUEST" ]; then
+            BUMP_VIRT_GUEST=true
+          fi
+
+          if [ -n "$DIFF_DEV" ]; then
+            BUMP_DEV=true
+          fi
+
+          bump_service() {
+            local DIR=$1
+            if [ -f "${DIR}version.json" ]; then
+              local V_CHECK=$(git diff --name-only origin/main...HEAD -- "${DIR}version.json" || true)
+              if [ -z "$V_CHECK" ]; then
+                jq '.["zstream"] |= (tonumber + 1 | tostring)' "${DIR}version.json" > temp.json && mv temp.json "${DIR}version.json"
                 echo "${DIR}version.json" >> modified_files.txt
                 MODIFIED_SERVICES+="${DIR%/}, "
                 UPDATED_ANY=true
               fi
             fi
-          done
+          }
+
+          [ "$BUMP_BASE" = true ] && bump_service "base/"
+          [ "$BUMP_VIRT_HOST" = true ] && bump_service "virt-host/"
+          [ "$BUMP_VIRT_GUEST" = true ] && bump_service "virt-guest/"
+          [ "$BUMP_DEV" = true ] && bump_service "dev/"
+
           echo "updated=$UPDATED_ANY" >> $GITHUB_OUTPUT
           echo "services=${MODIFIED_SERVICES%, }" >> $GITHUB_OUTPUT
 

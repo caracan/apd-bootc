@@ -3,17 +3,29 @@
   "extends": [
     "config:recommended"
   ],
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
   "packageRules": [
     {
-      "enabled": false,
+      "description": "Ignore internal images built within this repository",
+      "matchPackagePatterns": [
+        "^quay\\.io/caracan/"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable major updates for docker images",
       "matchDatasources": [
         "docker"
       ],
       "matchUpdateTypes": [
         "major"
-      ]
+      ],
+      "enabled": false
     },
     {
+      "description": "Pin digests for external container images",
       "matchDatasources": [
         "docker"
       ],
