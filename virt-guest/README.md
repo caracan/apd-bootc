@@ -1,6 +1,6 @@
 # Virtual Guest bootc image
 
-This builds on the apd-base image adding in qemu guest agent. 
+This builds on the apd-base image adding in qemu guest agent.
 
 ## Build
 
