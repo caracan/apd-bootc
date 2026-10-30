@@ -37,27 +37,35 @@ jobs:
           BUILD_VIRT_GUEST=false
           BUILD_DEV=false
 
+          [ -n "$DIFF_BASE" ] && BUILD_BASE=true
+          [ -n "$DIFF_VIRT_HOST" ] && BUILD_VIRT_HOST=true
+          [ -n "$DIFF_VIRT_GUEST" ] && BUILD_VIRT_GUEST=true
+          [ -n "$DIFF_DEV" ] && BUILD_DEV=true
+
           # Cascading dependency logic:
-          # base -> virt-host, virt-guest
-          # virt-host -> dev
-          if [ -n "$DIFF_BASE" ]; then
-            BUILD_BASE=true
-            BUILD_VIRT_HOST=true
-            BUILD_VIRT_GUEST=true
-            BUILD_DEV=true
+          # base -> virt-host, virt-guest (only if downstream tracks apd-base's major version)
+          if [ "$BUILD_BASE" = "true" ]; then
+            BASE_MAJOR=$(jq -r '.major' base/version.json)
+            if grep -q "quay.io/caracan/apd-base:${BASE_MAJOR}" virt-host/Containerfile; then
+              BUILD_VIRT_HOST=true
+            else
+              echo "virt-host does not track apd-base:${BASE_MAJOR}; skipping cascade."
+            fi
+            if grep -q "quay.io/caracan/apd-base:${BASE_MAJOR}" virt-guest/Containerfile; then
+              BUILD_VIRT_GUEST=true
+            else
+              echo "virt-guest does not track apd-base:${BASE_MAJOR}; skipping cascade."
+            fi
           fi
 
-          if [ -n "$DIFF_VIRT_HOST" ]; then
-            BUILD_VIRT_HOST=true
-            BUILD_DEV=true
-          fi
-
-          if [ -n "$DIFF_VIRT_GUEST" ]; then
-            BUILD_VIRT_GUEST=true
-          fi
-
-          if [ -n "$DIFF_DEV" ]; then
-            BUILD_DEV=true
+          # virt-host -> dev (only if dev tracks apd-virt-host's major version)
+          if [ "$BUILD_VIRT_HOST" = "true" ]; then
+            VIRT_HOST_MAJOR=$(jq -r '.major' virt-host/version.json)
+            if grep -q "quay.io/caracan/apd-virt-host:${VIRT_HOST_MAJOR}" dev/Containerfile; then
+              BUILD_DEV=true
+            else
+              echo "dev does not track apd-virt-host:${VIRT_HOST_MAJOR}; skipping cascade."
+            fi
           fi
 
           echo "build_base=$BUILD_BASE" >> $GITHUB_OUTPUT
@@ -82,22 +90,26 @@ jobs:
           set -e
           if [ "${{ steps.detect.outputs.build_base }}" = "true" ]; then
             echo "==> Testing build: apd-base"
-            buildah build --platform linux/amd64 -t quay.io/caracan/apd-base:1 ./base
+            MAJOR=$(jq -r '.major' base/version.json)
+            buildah build --platform linux/amd64 -t "quay.io/caracan/apd-base:${MAJOR}" ./base
           fi
 
           if [ "${{ steps.detect.outputs.build_virt_host }}" = "true" ]; then
             echo "==> Testing build: apd-virt-host"
-            buildah build --platform linux/amd64 -t quay.io/caracan/apd-virt-host:1 ./virt-host
+            MAJOR=$(jq -r '.major' virt-host/version.json)
+            buildah build --platform linux/amd64 -t "quay.io/caracan/apd-virt-host:${MAJOR}" ./virt-host
           fi
 
           if [ "${{ steps.detect.outputs.build_virt_guest }}" = "true" ]; then
             echo "==> Testing build: apd-virt-guest"
-            buildah build --platform linux/amd64 -t quay.io/caracan/apd-virt-guest:1 ./virt-guest
+            MAJOR=$(jq -r '.major' virt-guest/version.json)
+            buildah build --platform linux/amd64 -t "quay.io/caracan/apd-virt-guest:${MAJOR}" ./virt-guest
           fi
 
           if [ "${{ steps.detect.outputs.build_dev }}" = "true" ]; then
             echo "==> Testing build: apd-dev"
-            buildah build --platform linux/amd64 -t quay.io/caracan/apd-dev:1 ./dev
+            MAJOR=$(jq -r '.major' dev/version.json)
+            buildah build --platform linux/amd64 -t "quay.io/caracan/apd-dev:${MAJOR}" ./dev
           fi
           echo "==> All modified images passed test build!"
 
