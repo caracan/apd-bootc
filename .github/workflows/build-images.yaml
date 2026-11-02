@@ -94,15 +94,29 @@ jobs:
           fi
 
           # Dependency cascading:
-          # base -> virt-host, virt-guest
+          # base -> virt-host, virt-guest (only if downstream tracks apd-base's major version)
           if [ "$BUILD_BASE" = "true" ]; then
-            BUILD_VIRT_HOST=true
-            BUILD_VIRT_GUEST=true
+            BASE_MAJOR=$(jq -r '.major' base/version.json)
+            if grep -q "quay.io/caracan/apd-base:${BASE_MAJOR}" virt-host/Containerfile; then
+              BUILD_VIRT_HOST=true
+            else
+              echo "virt-host does not track apd-base:${BASE_MAJOR}; skipping cascade."
+            fi
+            if grep -q "quay.io/caracan/apd-base:${BASE_MAJOR}" virt-guest/Containerfile; then
+              BUILD_VIRT_GUEST=true
+            else
+              echo "virt-guest does not track apd-base:${BASE_MAJOR}; skipping cascade."
+            fi
           fi
 
-          # virt-host -> dev
+          # virt-host -> dev (only if dev tracks apd-virt-host's major version)
           if [ "$BUILD_VIRT_HOST" = "true" ]; then
-            BUILD_DEV=true
+            VIRT_HOST_MAJOR=$(jq -r '.major' virt-host/version.json)
+            if grep -q "quay.io/caracan/apd-virt-host:${VIRT_HOST_MAJOR}" dev/Containerfile; then
+              BUILD_DEV=true
+            else
+              echo "dev does not track apd-virt-host:${VIRT_HOST_MAJOR}; skipping cascade."
+            fi
           fi
 
           echo "build_base=$BUILD_BASE" >> $GITHUB_OUTPUT
