@@ -1,4 +1,4 @@
-FROM quay.io/caracan/apd-base:1
+FROM quay.io/caracan/apd-base:2
 
 RUN dnf -y install qemu-guest-agent podman-compose; \
 	dnf clean all; \
