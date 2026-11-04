@@ -30,6 +30,7 @@ rm /var/{log,cache,lib}/* -rf
 bootc container lint
 EORUN
 COPY wheel-nopasswd /etc/sudoers.d
+COPY 10-machinectl.rules /etc/polkit-1/rules.d/
 # Define required labels for this bootc image to be recognized as such.
 
 LABEL containers.bootc 1
