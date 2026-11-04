@@ -8,3 +8,4 @@ RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit c
         rm /var/{log,cache,lib}/* -rf
 
 COPY --chmod=0440 wheel-nopasswd /etc/sudoers.d/wheel-nopasswd
+COPY --chmod=0644 10-machinectl.rules /etc/polkit-1/rules.d/10-machinectl.rules
