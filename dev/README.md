@@ -1,14 +1,14 @@
 # Development Tools bootc Image (`apd-dev`)
 
-Built on top of `apd-virt-host:1`, this image equips a machine with essential command-line developer tooling, infrastructure automation tools, container build utilities, and mesh networking via Tailscale.
+Built on top of `apd-virt-host:2`, this image equips a machine with essential command-line developer tooling, infrastructure automation tools, container build utilities, and mesh networking via Tailscale.
 
 ## Contents
 
-* **Base Image**: `quay.io/caracan/apd-virt-host:1`
+* **Base Image**: `quay.io/caracan/apd-virt-host:2`
 * **Additional Repositories**: Tailscale stable Fedora repository (`tailscale.repo`)
 * **Installed Packages**:
   * Version Control: `git`
-  * Infrastructure Automation: `ansible`, `ansible-lint`
+  * Infrastructure Automation & Task Runners: `ansible`, `ansible-lint`, `just`
   * Container & Registry Utilities: `buildah`, `skopeo`, `podman-compose`
   * Networking & Mesh VPN: `tailscale`, `nmap`
   * Terminal Utilities: `tmux`
@@ -24,10 +24,12 @@ Built on top of `apd-virt-host:1`, this image equips a machine with essential co
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman build --pull=newer \
   -t quay.io/caracan/apd-dev:latest \
   -t quay.io/caracan/apd-dev:${MAJOR} \
+  -t quay.io/caracan/apd-dev:${MAJOR}.${MINOR} \
   -t quay.io/caracan/apd-dev:${VERSION} \
   .
 ```
@@ -37,9 +39,11 @@ podman build --pull=newer \
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman push quay.io/caracan/apd-dev:latest
 podman push quay.io/caracan/apd-dev:${MAJOR}
+podman push quay.io/caracan/apd-dev:${MAJOR}.${MINOR}
 podman push quay.io/caracan/apd-dev:${VERSION}
 ```
 
@@ -58,7 +62,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type qcow2 \
   --rootfs xfs \
-  quay.io/caracan/apd-dev:1
+  quay.io/caracan/apd-dev:2
 
 # Create Anaconda Installation ISO (bare-metal)
 sudo podman run --rm -it --privileged --pull=newer \
@@ -70,7 +74,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type anaconda-iso \
   --rootfs xfs \
-  quay.io/caracan/apd-dev:1
+  quay.io/caracan/apd-dev:2
 ```
 
 ## Deployment
@@ -78,5 +82,5 @@ sudo podman run --rm -it --privileged --pull=newer \
 On an existing bootc host:
 
 ```bash
-sudo bootc switch quay.io/caracan/apd-dev:1
+sudo bootc switch quay.io/caracan/apd-dev:2
 ```

@@ -4,7 +4,7 @@ The foundational bootc container image from which all other images in this repos
 
 ## Contents
 
-* **Base OS**: `quay.io/fedora/fedora-bootc:43` (pinned upstream digest tracked by Renovate)
+* **Base OS**: `quay.io/fedora/fedora-bootc:44` (pinned upstream digest tracked by Renovate)
 * **Installed Packages**:
   * Networking & Remote Access: `NetworkManager`, `openssh-server`, `wget`, `nfs-utils`
   * Container Tools: `podman`, `systemd-container`
@@ -14,6 +14,7 @@ The foundational bootc container image from which all other images in this repos
   * `cockpit.socket` enabled at boot
   * Firewalld pre-configured to allow Cockpit (`firewall-offline-cmd --add-service cockpit`)
   * Passwordless sudo enabled for `%wheel` via `/etc/sudoers.d/wheel-nopasswd` (mode `0440`)
+  * Passwordless machinectl shell access for `%wheel` via `/etc/polkit-1/rules.d/10-machinectl.rules` (mode `0644`)
 
 ## Local Build & Push
 
@@ -22,10 +23,12 @@ The foundational bootc container image from which all other images in this repos
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman build --pull=newer \
   -t quay.io/caracan/apd-base:latest \
   -t quay.io/caracan/apd-base:${MAJOR} \
+  -t quay.io/caracan/apd-base:${MAJOR}.${MINOR} \
   -t quay.io/caracan/apd-base:${VERSION} \
   .
 ```
@@ -35,9 +38,11 @@ podman build --pull=newer \
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman push quay.io/caracan/apd-base:latest
 podman push quay.io/caracan/apd-base:${MAJOR}
+podman push quay.io/caracan/apd-base:${MAJOR}.${MINOR}
 podman push quay.io/caracan/apd-base:${VERSION}
 ```
 
@@ -60,7 +65,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type qcow2 \
   --rootfs xfs \
-  quay.io/caracan/apd-base:1
+  quay.io/caracan/apd-base:2
 
 # Create Anaconda Installation ISO (bare-metal)
 sudo podman run --rm -it --privileged --pull=newer \
@@ -72,7 +77,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type anaconda-iso \
   --rootfs xfs \
-  quay.io/caracan/apd-base:1
+  quay.io/caracan/apd-base:2
 ```
 
 ## Deployment
@@ -80,5 +85,5 @@ sudo podman run --rm -it --privileged --pull=newer \
 On an existing bootc host:
 
 ```bash
-sudo bootc switch quay.io/caracan/apd-base:1
+sudo bootc switch quay.io/caracan/apd-base:2
 ```
