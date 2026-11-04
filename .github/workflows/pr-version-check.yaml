@@ -27,10 +27,10 @@ jobs:
       - name: Detect Changed Services
         id: detect
         run: |
-          DIFF_BASE=$(git diff --name-only origin/main...HEAD -- "base/" | grep -v "version.json" || true)
-          DIFF_VIRT_HOST=$(git diff --name-only origin/main...HEAD -- "virt-host/" | grep -v "version.json" || true)
-          DIFF_VIRT_GUEST=$(git diff --name-only origin/main...HEAD -- "virt-guest/" | grep -v "version.json" || true)
-          DIFF_DEV=$(git diff --name-only origin/main...HEAD -- "dev/" | grep -v "version.json" || true)
+          DIFF_BASE=$(git diff --name-only origin/main...HEAD -- "base/" | grep -v -E "version\.json|\.md$" || true)
+          DIFF_VIRT_HOST=$(git diff --name-only origin/main...HEAD -- "virt-host/" | grep -v -E "version\.json|\.md$" || true)
+          DIFF_VIRT_GUEST=$(git diff --name-only origin/main...HEAD -- "virt-guest/" | grep -v -E "version\.json|\.md$" || true)
+          DIFF_DEV=$(git diff --name-only origin/main...HEAD -- "dev/" | grep -v -E "version\.json|\.md$" || true)
 
           BUILD_BASE=false
           BUILD_VIRT_HOST=false

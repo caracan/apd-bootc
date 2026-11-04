@@ -75,8 +75,8 @@ jobs:
               BASE_SHA="HEAD~1"
             fi
 
-            DIFF=$(git diff --name-only "$BASE_SHA" HEAD || true)
-            echo "Changed files between $BASE_SHA and HEAD:"
+            DIFF=$(git diff --name-only "$BASE_SHA" HEAD | grep -v -E '\.md$' || true)
+            echo "Changed files (ignoring docs) between $BASE_SHA and HEAD:"
             echo "$DIFF"
 
             if echo "$DIFF" | grep -q -E "^base/|^\.github/workflows/"; then

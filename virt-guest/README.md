@@ -1,10 +1,10 @@
 # Virtualization Guest bootc Image (`apd-virt-guest`)
 
-Built on top of `apd-base:1`, this image is tailored for running as a lightweight virtual machine guest inside KVM/QEMU, Proxmox, or other hypervisors.
+Built on top of `apd-base:2`, this image is tailored for running as a lightweight virtual machine guest inside KVM/QEMU, Proxmox, or other hypervisors.
 
 ## Contents
 
-* **Base Image**: `quay.io/caracan/apd-base:1`
+* **Base Image**: `quay.io/caracan/apd-base:2`
 * **Installed Packages**:
   * Guest Agent: `qemu-guest-agent`
   * Container Orchestration: `podman-compose`
@@ -18,10 +18,12 @@ Built on top of `apd-base:1`, this image is tailored for running as a lightweigh
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman build --pull=newer \
   -t quay.io/caracan/apd-virt-guest:latest \
   -t quay.io/caracan/apd-virt-guest:${MAJOR} \
+  -t quay.io/caracan/apd-virt-guest:${MAJOR}.${MINOR} \
   -t quay.io/caracan/apd-virt-guest:${VERSION} \
   .
 ```
@@ -31,9 +33,11 @@ podman build --pull=newer \
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman push quay.io/caracan/apd-virt-guest:latest
 podman push quay.io/caracan/apd-virt-guest:${MAJOR}
+podman push quay.io/caracan/apd-virt-guest:${MAJOR}.${MINOR}
 podman push quay.io/caracan/apd-virt-guest:${VERSION}
 ```
 
@@ -52,7 +56,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type qcow2 \
   --rootfs xfs \
-  quay.io/caracan/apd-virt-guest:1
+  quay.io/caracan/apd-virt-guest:2
 
 # Create Anaconda Installation ISO
 sudo podman run --rm -it --privileged --pull=newer \
@@ -64,7 +68,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type anaconda-iso \
   --rootfs xfs \
-  quay.io/caracan/apd-virt-guest:1
+  quay.io/caracan/apd-virt-guest:2
 ```
 
 ## Spawning a VM with virt-install
@@ -88,5 +92,5 @@ sudo virt-install \
 On an existing bootc host:
 
 ```bash
-sudo bootc switch quay.io/caracan/apd-virt-guest:1
+sudo bootc switch quay.io/caracan/apd-virt-guest:2
 ```

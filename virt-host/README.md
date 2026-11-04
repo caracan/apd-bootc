@@ -1,10 +1,10 @@
 # Virtualization Host bootc Image (`apd-virt-host`)
 
-Built on top of `apd-base:1`, this image configures a dedicated virtualization host capable of running and managing KVM virtual machines.
+Built on top of `apd-base:2`, this image configures a dedicated virtualization host capable of running and managing KVM virtual machines.
 
 ## Contents
 
-* **Base Image**: `quay.io/caracan/apd-base:1`
+* **Base Image**: `quay.io/caracan/apd-base:2`
 * **Installed Packages**:
   * Hypervisor & Drivers: `qemu-kvm`, `libvirt`
   * Management Tools: `virt-install`, `virt-viewer`
@@ -21,10 +21,12 @@ Built on top of `apd-base:1`, this image configures a dedicated virtualization h
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman build --pull=newer \
   -t quay.io/caracan/apd-virt-host:latest \
   -t quay.io/caracan/apd-virt-host:${MAJOR} \
+  -t quay.io/caracan/apd-virt-host:${MAJOR}.${MINOR} \
   -t quay.io/caracan/apd-virt-host:${VERSION} \
   .
 ```
@@ -34,9 +36,11 @@ podman build --pull=newer \
 ```bash
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
 MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
 
 podman push quay.io/caracan/apd-virt-host:latest
 podman push quay.io/caracan/apd-virt-host:${MAJOR}
+podman push quay.io/caracan/apd-virt-host:${MAJOR}.${MINOR}
 podman push quay.io/caracan/apd-virt-host:${VERSION}
 ```
 
@@ -55,7 +59,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type qcow2 \
   --rootfs xfs \
-  quay.io/caracan/apd-virt-host:1
+  quay.io/caracan/apd-virt-host:2
 
 # Create Anaconda Installation ISO (bare-metal)
 sudo podman run --rm -it --privileged --pull=newer \
@@ -67,7 +71,7 @@ sudo podman run --rm -it --privileged --pull=newer \
   --chown 1000:1000 \
   --type anaconda-iso \
   --rootfs xfs \
-  quay.io/caracan/apd-virt-host:1
+  quay.io/caracan/apd-virt-host:2
 ```
 
 ## Deployment
@@ -75,5 +79,5 @@ sudo podman run --rm -it --privileged --pull=newer \
 On an existing bootc host:
 
 ```bash
-sudo bootc switch quay.io/caracan/apd-virt-host:1
+sudo bootc switch quay.io/caracan/apd-virt-host:2
 ```

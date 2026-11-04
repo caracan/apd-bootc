@@ -7,7 +7,7 @@ A collection of custom [bootc](https://docs.fedoraproject.org/en-US/bootc/) cont
 The images are structured in a layered dependency hierarchy:
 
 ```text
-quay.io/fedora/fedora-bootc:43 (Upstream)
+quay.io/fedora/fedora-bootc:44 (Upstream)
               │
           apd-base
          ╱        ╲
@@ -20,30 +20,30 @@ quay.io/fedora/fedora-bootc:43 (Upstream)
 
 | Image | Base Image | Key Packages & Features | Registry URL |
 | :--- | :--- | :--- | :--- |
-| **`apd-base`** | `fedora-bootc:43` | Cockpit, Cockpit-Podman, Podman, SSH, Sudo (wheel NOPASSWD), Firewalld, NFS utils | [`quay.io/caracan/apd-base`](https://quay.io/repository/caracan/apd-base) |
-| **`apd-virt-host`** | `apd-base:1` | KVM/QEMU, Libvirt, Virt-Install, Cockpit-Machines, `libvirt-guests` service | [`quay.io/caracan/apd-virt-host`](https://quay.io/repository/caracan/apd-virt-host) |
-| **`apd-virt-guest`** | `apd-base:1` | QEMU Guest Agent (enabled), Podman-Compose | [`quay.io/caracan/apd-virt-guest`](https://quay.io/repository/caracan/apd-virt-guest) |
-| **`apd-dev`** | `apd-virt-host:1` | Git, Ansible, Ansible-Lint, Buildah, Skopeo, Tmux, Nmap, Tailscale, Podman-Compose | [`quay.io/caracan/apd-dev`](https://quay.io/repository/caracan/apd-dev) |
+| **`apd-base`** | `fedora-bootc:44` | Cockpit, Cockpit-Podman, Podman, SSH, Sudo (wheel NOPASSWD), Polkit (machinectl shell), Firewalld, NFS utils | [`quay.io/caracan/apd-base`](https://quay.io/repository/caracan/apd-base) |
+| **`apd-virt-host`** | `apd-base:2` | KVM/QEMU, Libvirt, Virt-Install, Cockpit-Machines, `libvirt-guests` service | [`quay.io/caracan/apd-virt-host`](https://quay.io/repository/caracan/apd-virt-host) |
+| **`apd-virt-guest`** | `apd-base:2` | QEMU Guest Agent (enabled), Podman-Compose | [`quay.io/caracan/apd-virt-guest`](https://quay.io/repository/caracan/apd-virt-guest) |
+| **`apd-dev`** | `apd-virt-host:2` | Git, Ansible, Ansible-Lint, Buildah, Skopeo, Tmux, Nmap, Tailscale, Podman-Compose, Just | [`quay.io/caracan/apd-dev`](https://quay.io/repository/caracan/apd-dev) |
 
 ## Tagging & Versioning
 
 Each image directory contains a `version.json` specifying semantic versioning:
 
-* **`major`**: Bounded to the major OS release (e.g., `1` for Fedora 43). Downstream images lock to `:1` to prevent unexpected major OS upgrades.
+* **`major`**: Bounded to the major OS release (e.g., `1` for Fedora 43, `2` for Fedora 44). Downstream images lock to the major tag (e.g., `:2`) to prevent unexpected major OS upgrades.
 * **`minor`**: Feature additions or package set changes.
 * **`zstream`**: Patch updates, rebuilds, and upstream security fixes.
 
 Images are pushed to Quay with the following tags:
 
 * `:latest` — The newest build.
-* `:1` — The latest build of major release 1.
-* `:1.X` — The latest build of minor release 1.X.
-* `:1.X.Y` — Specific immutable version build.
+* `:<major>` (e.g., `:2`) — The latest build of that major release.
+* `:<major>.<minor>` (e.g., `:2.1`) — The latest build of that minor release.
+* `:<major>.<minor>.<zstream>` (e.g., `:2.1.0`) — Specific immutable version build.
 
 ## CI/CD & Automation
 
 1. **Upstream Monitoring (Renovate)**:
-   * Renovate monitors upstream `quay.io/fedora/fedora-bootc:43` digest changes.
+   * Renovate monitors upstream `quay.io/fedora/fedora-bootc:44` digest changes.
    * Internal images (`quay.io/caracan/*`) are ignored by Renovate to avoid redundant polling and PR cascades.
 2. **PR Verification & Cascading Version Bumps**:
    * When Renovate opens a PR, `.github/workflows/pr-version-check.yaml` runs.
@@ -53,7 +53,7 @@ Images are pushed to Quay with the following tags:
 3. **Cascading Build Pipeline**:
    * On merge to `main`, `.github/workflows/build-images.yaml` builds and pushes the updated images in dependency order:
      `base` $\rightarrow$ `virt-host` / `virt-guest` $\rightarrow$ `dev`.
-   * Newly pushed `:1` tags are immediately consumed by dependent builds.
+   * Newly pushed `major` tags are immediately consumed by dependent builds.
 
 ## Local Development & Building
 
@@ -72,10 +72,15 @@ To build an individual image manually (for example, `base`):
 ```bash
 cd base
 VERSION=$(jq -r '.major + "." + .minor + "." + .zstream' version.json)
+MAJOR=$(jq -r '.major' version.json)
+MINOR=$(jq -r '.minor' version.json)
+
 podman build --pull=newer \
   -t quay.io/caracan/apd-base:latest \
-  -t quay.io/caracan/apd-base:1 \
-  -t quay.io/caracan/apd-base:${VERSION} .
+  -t quay.io/caracan/apd-base:${MAJOR} \
+  -t quay.io/caracan/apd-base:${MAJOR}.${MINOR} \
+  -t quay.io/caracan/apd-base:${VERSION} \
+  .
 ```
 
 ## Creating Installable Artifacts (Disk Images & ISOs)
@@ -109,7 +114,7 @@ Installable disk images (QCOW2) or Anaconda installation ISOs can be generated u
      --chown 1000:1000 \
      --type qcow2 \
      --rootfs xfs \
-     quay.io/caracan/apd-base:1
+     quay.io/caracan/apd-base:2
    ```
 
 4. Generate an Anaconda installation ISO (for bare-metal install):
@@ -124,7 +129,7 @@ Installable disk images (QCOW2) or Anaconda installation ISOs can be generated u
      --chown 1000:1000 \
      --type anaconda-iso \
      --rootfs xfs \
-     quay.io/caracan/apd-base:1
+     quay.io/caracan/apd-base:2
    ```
 
 ## Deploying & Updating Running Systems
@@ -134,7 +139,7 @@ Installable disk images (QCOW2) or Anaconda installation ISOs can be generated u
 On any running bootc host, switch to one of these images:
 
 ```bash
-sudo bootc switch quay.io/caracan/apd-base:1
+sudo bootc switch quay.io/caracan/apd-base:2
 ```
 
 ### Upgrade System
