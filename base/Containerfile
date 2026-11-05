@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora-bootc:44@sha256:c242b074c11b483ef12147e4e9269d96b7af3409d1b90758a6cc503b49261be5 
+FROM quay.io/fedora/fedora-bootc:44@sha256:f424a0e63e6e50434ceb5d382848655e791affc27502d01484a60cc4ae4d76ca 
 
 RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget bash-color-prompt; \ 
         dnf -y install --allowerasing vim-default-editor.noarch; \
