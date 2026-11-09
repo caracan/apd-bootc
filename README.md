@@ -205,6 +205,7 @@ sudo systemctl enable --now bootc-fetch-apply-updates.timer
 Leave the upstream `bootc-fetch-apply-updates.timer` masked, and deploy a custom systemd unit pair to `/etc/systemd/system/`:
 
 1. `/etc/systemd/system/bootc-scheduled-upgrade.service`:
+
    ```ini
    [Unit]
    Description=Scheduled System Update (bootc)
@@ -215,6 +216,7 @@ Leave the upstream `bootc-fetch-apply-updates.timer` masked, and deploy a custom
    ```
 
 2. `/etc/systemd/system/bootc-scheduled-upgrade.timer`:
+
    ```ini
    [Unit]
    Description=Run bootc upgrade on schedule
