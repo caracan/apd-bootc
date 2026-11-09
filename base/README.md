@@ -9,9 +9,12 @@ The foundational bootc container image from which all other images in this repos
   * Networking & Remote Access: `NetworkManager`, `openssh-server`, `wget`, `nfs-utils`
   * Container Tools: `podman`, `systemd-container`
   * Web Administration: `cockpit`, `cockpit-podman`
+  * System Performance & Tuning: `tuned`
   * System & Shell Utilities: `sudo`, `firewalld`, `acl`, `bash-color-prompt`
 * **Configuration & Services**:
   * `cockpit.socket` enabled at boot
+  * `tuned` enabled with default profile `throughput-performance` (`/etc/tuned/active_profile`)
+  * `bootc-fetch-apply-updates.timer` masked to disable unexpected automatic updates/reboots
   * Firewalld pre-configured to allow Cockpit (`firewall-offline-cmd --add-service cockpit`)
   * Passwordless sudo enabled for `%wheel` via `/etc/sudoers.d/wheel-nopasswd` (mode `0440`)
   * Passwordless machinectl shell access for `%wheel` via `/etc/polkit-1/rules.d/10-machinectl.rules` (mode `0644`)

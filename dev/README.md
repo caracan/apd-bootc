@@ -13,6 +13,7 @@ Built on top of `apd-virt-host:2`, this image equips a machine with essential co
   * Networking & Mesh VPN: `tailscale`, `nmap`
   * Terminal Utilities: `tmux`
 * **Configuration**:
+  * TuneD profile set to `throughput-performance` (`/etc/tuned/active_profile`) for fast compilation, container builds, and developer tasks
   * Validated with `bootc container lint`
 
 > **Tip:** Language runtimes and project-specific dependencies are recommended to be run inside [Toolbx](https://containertoolbx.org/) / Podman containers rather than baked directly into the immutable OS image.
