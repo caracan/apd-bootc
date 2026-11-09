@@ -1,9 +1,12 @@
 FROM quay.io/fedora/fedora-bootc:44@sha256:8e22e7e6044e993929ca0ff0d10addcf1c47004464b4e9da7a6c70d37d03b6bd 
 
-RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget bash-color-prompt; \ 
+RUN dnf -y install NetworkManager openssh-server sudo firewalld podman cockpit cockpit-podman acl systemd-container nfs-utils wget bash-color-prompt tuned; \ 
         dnf -y install --allowerasing vim-default-editor.noarch; \
 	dnf clean all; \
 	systemctl enable cockpit.socket; \
+	systemctl enable tuned; \
+	systemctl mask bootc-fetch-apply-updates.timer; \
+	echo "throughput-performance" > /etc/tuned/active_profile; \
         firewall-offline-cmd --add-service cockpit; \
         rm /var/{log,cache,lib}/* -rf
 

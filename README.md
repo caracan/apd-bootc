@@ -18,12 +18,12 @@ quay.io/fedora/fedora-bootc:44 (Upstream)
 
 ## Image Catalog
 
-| Image | Base Image | Key Packages & Features | Registry URL |
-| :--- | :--- | :--- | :--- |
-| **`apd-base`** | `fedora-bootc:44` | Cockpit, Cockpit-Podman, Podman, SSH, Sudo (wheel NOPASSWD), Polkit (machinectl shell), Firewalld, NFS utils | [`quay.io/caracan/apd-base`](https://quay.io/repository/caracan/apd-base) |
-| **`apd-virt-host`** | `apd-base:2` | KVM/QEMU, Libvirt, Virt-Install, Cockpit-Machines, `libvirt-guests` service | [`quay.io/caracan/apd-virt-host`](https://quay.io/repository/caracan/apd-virt-host) |
-| **`apd-virt-guest`** | `apd-base:2` | QEMU Guest Agent (enabled), Podman-Compose | [`quay.io/caracan/apd-virt-guest`](https://quay.io/repository/caracan/apd-virt-guest) |
-| **`apd-dev`** | `apd-virt-host:2` | Git, Ansible, Ansible-Lint, Buildah, Skopeo, Tmux, Nmap, Tailscale, Podman-Compose, Just | [`quay.io/caracan/apd-dev`](https://quay.io/repository/caracan/apd-dev) |
+| Image | Base Image | Key Packages & Features | TuneD Profile | Registry URL |
+| :--- | :--- | :--- | :--- | :--- |
+| **`apd-base`** | `fedora-bootc:44` | Cockpit, Cockpit-Podman, Podman, SSH, Sudo (wheel NOPASSWD), Polkit (machinectl shell), Firewalld, NFS utils, TuneD, auto-updates masked | `throughput-performance` | [`quay.io/caracan/apd-base`](https://quay.io/repository/caracan/apd-base) |
+| **`apd-virt-host`** | `apd-base:2` | KVM/QEMU, Libvirt, Virt-Install, Cockpit-Machines, `libvirt-guests` service | `virtual-host` | [`quay.io/caracan/apd-virt-host`](https://quay.io/repository/caracan/apd-virt-host) |
+| **`apd-virt-guest`** | `apd-base:2` | QEMU Guest Agent (enabled), Podman-Compose | `virtual-guest` | [`quay.io/caracan/apd-virt-guest`](https://quay.io/repository/caracan/apd-virt-guest) |
+| **`apd-dev`** | `apd-virt-host:2` | Git, Ansible, Ansible-Lint, Buildah, Skopeo, Tmux, Nmap, Tailscale, Podman-Compose, Just | `throughput-performance` | [`quay.io/caracan/apd-dev`](https://quay.io/repository/caracan/apd-dev) |
 
 ## Tagging & Versioning
 
@@ -132,26 +132,114 @@ Installable disk images (QCOW2) or Anaconda installation ISOs can be generated u
      quay.io/caracan/apd-base:2
    ```
 
+## System Performance Tuning (TuneD)
+
+All images include [TuneD](https://tuned-project.org/) to automatically tune kernel parameters, sysctls, I/O schedulers, and CPU governors for specific server roles.
+
+Because container builds do not run a live D-Bus daemon, the profile is baked statically during image build into `/etc/tuned/active_profile` and enabled via `systemctl enable tuned`:
+
+* **`throughput-performance`** (`apd-base`, `apd-dev`): Optimizes CPU governors, dirty page writebacks, and I/O readahead for server throughput and compute-heavy compilation/container builds.
+* **`virtual-host`** (`apd-virt-host`): Optimizes KVM/QEMU hypervisors (memory overcommit, KVM halt-polling, dirty page thresholds, and scheduler latencies under multi-VM contention).
+* **`virtual-guest`** (`apd-virt-guest`): Optimizes VM guests (virtio disk elevators, dirty page flush intervals, avoiding host/guest scheduling conflicts).
+
+To inspect the active profile on a running host:
+
+```bash
+tuned-adm active
+```
+
 ## Deploying & Updating Running Systems
 
-### Switch to an Image
+### Automatic Updates Masked by Default
+
+By default in `fedora-bootc`, `bootc-fetch-apply-updates.timer` checks for updates and reboots the system automatically. In this repository, **`bootc-fetch-apply-updates.timer` is masked in `apd-base`** (and inherited by all images) to prevent surprise reboots and disruption of running workloads.
+
+### Update Options for Deployed Machines
+
+Depending on your operational requirements, choose one of the following approaches to manage updates:
+
+#### Option 1: Ad-Hoc / Orchestrated Updates (Ansible, Scripts, Manual)
+
+Manually or via configuration management, pull and apply updates during planned maintenance:
+
+```bash
+# Check and download/stage the update (requires manual reboot later):
+sudo bootc upgrade
+
+# Check, stage, and reboot immediately to apply:
+sudo bootc upgrade --apply
+
+# Check current status:
+sudo bootc status
+```
+
+#### Option 2: Unmask & Apply a Custom Schedule Drop-in
+
+If you want a machine to automatically update on a predictable schedule (e.g., every Sunday at 3:00 AM), deploy a drop-in override to `/etc/systemd/system/bootc-fetch-apply-updates.timer.d/override.conf`:
+
+```ini
+[Unit]
+Description=Weekly bootc update schedule
+
+[Timer]
+# Clear upstream triggers
+OnBootSec=
+OnUnitActiveSec=
+OnCalendar=
+
+# Define custom maintenance window
+OnCalendar=Sun *-*-* 03:00:00
+Persistent=true
+```
+
+Then unmask and enable the timer:
+
+```bash
+sudo systemctl unmask bootc-fetch-apply-updates.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now bootc-fetch-apply-updates.timer
+```
+
+#### Option 3: Dedicated Standalone Maintenance Timer (Clean Separation)
+
+Leave the upstream `bootc-fetch-apply-updates.timer` masked, and deploy a custom systemd unit pair to `/etc/systemd/system/`:
+
+1. `/etc/systemd/system/bootc-scheduled-upgrade.service`:
+
+   ```ini
+   [Unit]
+   Description=Scheduled System Update (bootc)
+   
+   [Service]
+   Type=oneshot
+   ExecStart=/usr/bin/bootc upgrade --apply
+   ```
+
+2. `/etc/systemd/system/bootc-scheduled-upgrade.timer`:
+
+   ```ini
+   [Unit]
+   Description=Run bootc upgrade on schedule
+   
+   [Timer]
+   OnCalendar=Sun *-*-* 03:00:00
+   Persistent=true
+   
+   [Install]
+   WantedBy=timers.target
+   ```
+
+Enable and start the custom timer:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now bootc-scheduled-upgrade.timer
+```
+
+### Switching to an Image
 
 On any running bootc host, switch to one of these images:
 
 ```bash
 sudo bootc switch quay.io/caracan/apd-base:2
-```
-
-### Upgrade System
-
-To pull the latest updates within the tracked stream:
-
-```bash
-sudo bootc upgrade
-```
-
-### Check Status
-
-```bash
-sudo bootc status
 ```

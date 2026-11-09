@@ -11,6 +11,7 @@ Built on top of `apd-base:2`, this image configures a dedicated virtualization h
   * Web Interface: `cockpit-machines`
 * **Configuration & Services**:
   * `libvirt-guests` service enabled at boot (graceful suspension/shutdown of guests on host reboot)
+  * TuneD profile set to `virtual-host` (`/etc/tuned/active_profile`) for KVM/hypervisor performance
   * System `qemu` user configured (`/etc/passwd`)
   * Validated with `bootc container lint`
 

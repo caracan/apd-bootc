@@ -10,6 +10,8 @@ Built on top of `apd-base:2`, this image is tailored for running as a lightweigh
   * Container Orchestration: `podman-compose`
 * **Configuration & Services**:
   * `qemu-guest-agent` service enabled at boot (enables host-to-guest shutdown, IP reporting, and fsfreeze for live backups)
+  * TuneD profile set to `virtual-guest` (`/etc/tuned/active_profile`) for virtual machine guest performance
+  * Validated with `bootc container lint`
 
 ## Local Build & Push
 
