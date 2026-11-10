@@ -1,9 +1,10 @@
 FROM quay.io/caracan/apd-base:2
 
-RUN dnf -y install qemu-guest-agent podman-compose; \
+RUN dnf -y install qemu-guest-agent podman-compose cloud-init; \
 	dnf clean all; \
     systemctl enable qemu-guest-agent; \
     echo "virtual-guest" > /etc/tuned/active_profile; \
+    ln -s ../cloud-init.target /usr/lib/systemd/system/default.target.wants; \
     rm /var/{log,cache,lib}/* -rf
 
 RUN bootc container lint
