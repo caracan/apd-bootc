@@ -1,6 +1,6 @@
 
 # Begin with a standard bootc base image that is reused as a "builder" for the custom image.
-FROM quay.io/fedora/fedora-bootc:44@sha256:34e72ed91aeb31f74d232f992f9e28861180a1c0eb5034fb19d6fb2e7cdeb5ed as builder
+FROM quay.io/fedora/fedora-bootc:44@sha256:eba7e36172b8fd1cbab468cf315cab8518cc2f9522ea06759f88b07099fcf732 as builder
 # Configure and override source RPM repositories, if necessary. This step is not required when building up from minimal unless referencing specific content views or target mirrored/snapshotted/pinned versions of content.
 # Add additional repositories to apply customizations to the image. However, referencing a custom manifest in this step is not currently supported without forking the code.
 # Build the root file system using the specified repositories and non-RPM content from the "builder" base image.
